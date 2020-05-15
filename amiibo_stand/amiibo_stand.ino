@@ -159,15 +159,12 @@ void loop() {
           }
         
         } else if (!wave.isplaying) {
-          // Intro Complete; Play the main song
 
-          //Captain Falcon
-          if (CID == 6) 
-          {
-            strcpy_P(buffer, (char*)pgm_read_word(&(string_table[0])));
-            playcomplete(buffer);
-          }
+          // Intro Complete; Start the main song
+          playcomplete(buffer);
+
         }
+
       } else {
         
         // Clear/reset all data
