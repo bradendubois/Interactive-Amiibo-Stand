@@ -18,7 +18,7 @@ The advantage of this re-write is that once this code is flashed to an Arduino, 
 
 ## Formatting Audio Data
 
-There are (at most) two clips that will play on a particular Amiibo. The first song the user wants to play must be formatted as "\<CID\>.wav", where \<CID\> corresponds to the Character ID of the Amiibo (see tables below or in the ``cid-tables`` directory). After this clip has played, if the Amiibo is still present, it can play (and loop until the Amiibo is removed) a second clip, formatted "\<CID\>_song.wav". 
+There are (at most) two clips that will play on a particular Amiibo. The first song the user wants to play must be formatted as "\<CID\>.wav", where \<CID\> corresponds to the Character ID of the Amiibo (see tables in the ``cid-tables`` directory). After this clip has played, if the Amiibo is still present, it can play (and loop until the Amiibo is removed) a second clip, formatted "\<CID\>_song.wav". 
 
 If an audio clip is not present for a particular Amiibo, it will print out an error message, followed by the name of the file it expected to find. If you get a new Amiibo, that'll be the easiest way to find what the CID/filename should be.
 
@@ -30,6 +30,6 @@ You can get various Nintendo sound clips from different websites already, such a
 
 ## Acknowledgements / Other Resources
 
-- For a neat video showing what this can look like when done, see [Modus]'s (the author of the original repository) [video showing it in action](https://www.youtube.com/watch?v=nZ2LU7xCp8U&feature=youtu.be).
+- For a neat video showing what this can look like when done, see [Modus](https://github.com/ModusPwnin)'s (the author of the original repository) [video showing it in action](https://www.youtube.com/watch?v=nZ2LU7xCp8U&feature=youtu.be).
 - Modus also made an [imgur album](https://imgur.com/a/HaJBy) showing it being built.
 - [Willem_Pijl](https://www.instructables.com/member/Willem_Pijl/) made their own [instructable building theirs](https://www.instructables.com/id/Interactive-Arduino-Amiibo-Stand/), and they use Modus's original code on it, so following that guide should also work. I think this one makes a better looking stand than the original.
