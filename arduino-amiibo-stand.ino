@@ -4,38 +4,31 @@
 #include <Adafruit_NFCShield_I2C.h>
 #include <stdio.h>
 
-//#include <MemoryFree.h>
-
-//Loading Strings into PROGMEM to save RAM
-#include <avr/pgmspace.h>
-
 #define IRQ 6 // this trace must be cut and rewired!
 #define RESET 8
 
 Adafruit_NFCShield_I2C nfc(IRQ, RESET);
 
-SdReader card; // This object holds the information for the card
-FatVolume vol; // This holds the information for the partition on the card
+SdReader card;  // This object holds the information for the card
+FatVolume vol;  // This holds the information for the partition on the card
 FatReader root; // This holds the information for the volumes root directory
 FatReader file; // This object represent the WAV file for a pi digit or period
-WaveHC wave; // This is the only wave (audio) object, since we will only play one at a time
+WaveHC wave;    // This is the only wave (audio) object, since we will only play one at a time
 
-//Setup()
 uint32_t versiondata;
 
-//My Added Variables
 uint32_t lastcard = 0;
 uint32_t currentcard = 1;
 uint32_t CID = 0;
 boolean introStarted = false;
 
-//Loop()
 uint32_t cardidentifier;
-uint8_t success;
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 }; // Buffer to store the returned UID
 uint8_t uidLength; // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
- 
-//////////////////////////////////// SETUP
+
+/*
+ * Setup
+ */
 
 void setup() {
   
@@ -73,24 +66,16 @@ void setup() {
 
 }
 
-/////////////////////////////////// LOOP
+/*
+ * Loop
+ */
 
 void loop() {
-  
-  //Memory Checker
-  
-  //Serial.print(F("Memory Available = "));
-  //Serial.println(freeMemory());
   
   // Wait for an ISO14443A type cards (Mifare, etc.). When one is found
   // 'uid' will be populated with the UID, and uidLength will indicate
   // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
-  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
-
-  cardidentifier = 0;
-
-  // Read a card
-  if (success) {
+  if (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength)) {
     
     // turn the four byte UID of a mifare classic into a single variable #
     cardidentifier = uid[3];
@@ -114,10 +99,9 @@ void loop() {
      
     // Try to read the Character info page (#21)
     uint8_t charID[32];
-    success = nfc.mifareultralight_ReadPage (21, charID);
 
     // Successfully read the Character info page
-    if (success) {
+    if (nfc.mifareultralight_ReadPage (21, charID)) {
       
       // turn page 21 into a character ID
       CID = charID[6];
@@ -170,6 +154,7 @@ void loop() {
       currentcard = 999999998;
       introStarted = false;
     }
+    
   } else {
     // No Amiibo; Clear/reset all data, wait for RFID card to show up!
     Serial.println(F("Waiting for an Amiibo ..."));wave.stop();
@@ -178,8 +163,6 @@ void loop() {
     introStarted = false;
   }
 }
-
-/////////////////////////////////// HELPERS
 
 /*
 * Open and start playing a WAV file

@@ -1,5 +1,3 @@
-***This code is untested until I obtain a cord to flash to to my Arduino***
-
 # arduino-amiibo-stand
 
 A fork of [ModusPwnin](https://github.com/ModusPwnin)'s [Interactive-Amiibo-Stand](https://github.com/ModusPwnin/Interactive-Amiibo-Stand), overhauled to reduce code size, fix bugs, and streamline support for future Amiibo releases.
@@ -10,11 +8,9 @@ The following libraries are required:
 - [wavehc](https://code.google.com/archive/p/wavehc/)
 - [NFC](https://github.com/adafruit/Adafruit_NFCShield_I2C)
 
-The NFC library appears to be deprecated; I haven't touched my Arduino setup in years until now, and *possibly* can update the code to use the newer library it recommends.
-
 ## Tradeoffs
 
-The advantage of this re-write is that once this code is flashed to an Arduino, it should *never need an update* to support future Amiibo's when they are released. This is done through imposing an arbitrary naming scheme on the audio clips that the user wants to play on particular Amiibo. 
+The advantage of this re-write is that once this code is flashed to an Arduino, it should *never need an update* to support future Amiibo's when they are released. This is done through imposing an arbitrary naming scheme on the audio clips that the user wants to play on particular Amiibo. As a result, the code size decreases from ~1500 lines to just under 200.
 
 ## Formatting Audio Data
 
