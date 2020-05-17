@@ -9,8 +9,6 @@
 //Loading Strings into PROGMEM to save RAM
 #include <avr/pgmspace.h>
 
-char buffer[30];
-
 #define IRQ 6 // this trace must be cut and rewired!
 #define RESET 8
 
@@ -21,10 +19,6 @@ FatVolume vol; // This holds the information for the partition on the card
 FatReader root; // This holds the information for the volumes root directory
 FatReader file; // This object represent the WAV file for a pi digit or period
 WaveHC wave; // This is the only wave (audio) object, since we will only play one at a time
-/*
-* Define macro to put error messages in flash memory
-*/
-#define error(msg) error_P(PSTR(msg))
 
 //Setup()
 uint32_t versiondata;
@@ -50,9 +44,9 @@ void setup() {
     
   PgmPrintln("Amiibo Scanner");
   
-  if (!card.init()) error("Card init. failed!");
-  if (!vol.init(card)) error("No partition!");
-  if (!root.openRoot(vol)) error("Couldn't open dir");
+  if (!card.init()) Serial.println("Card init. failed!");
+  if (!vol.init(card)) Serial.println("No partition!");
+  if (!root.openRoot(vol)) Serial.println("Couldn't open dir");
   
   PgmPrintln("Files found:");
   root.ls();
@@ -87,9 +81,6 @@ void loop() {
   
   //Serial.print(F("Memory Available = "));
   //Serial.println(freeMemory());
-   
-  // wait for RFID card to show up!
-  Serial.println(F("Waiting for an Amiibo ..."));
   
   // Wait for an ISO14443A type cards (Mifare, etc.). When one is found
   // 'uid' will be populated with the UID, and uidLength will indicate
@@ -101,25 +92,26 @@ void loop() {
   // Read a card
   if (success) {
     
-    Serial.print(F("Amiibo detected #"));
     // turn the four byte UID of a mifare classic into a single variable #
     cardidentifier = uid[3];
     cardidentifier <<= 8; cardidentifier |= uid[2];
     cardidentifier <<= 8; cardidentifier |= uid[1];
     cardidentifier <<= 8; cardidentifier |= uid[0];
-    Serial.println(cardidentifier);
     
     // Compare to the previous card
     lastcard = currentcard;
     currentcard = cardidentifier;
     
-    Serial.print(F("Last Amiibo:    #"));
-    Serial.println(lastcard);
-    Serial.print(F("Current Card:"));
-    Serial.println(currentcard);
-    
-    // Check Character ID
-  
+    /* Optional Debug Information
+    if (lastcard != currentcard) {
+      Serial.println("\n*****************\n");
+      Serial.print(F("Last Amiibo:     #"));
+      Serial.println(lastcard);
+      Serial.print(F("Current Card:"));
+      Serial.println(currentcard);
+    }
+    */
+     
     // Try to read the Character info page (#21)
     uint8_t charID[32];
     success = nfc.mifareultralight_ReadPage (21, charID);
@@ -136,43 +128,41 @@ void loop() {
       CID <<= 8; CID |= charID[2];
       CID <<= 8; CID |= charID[1];
       CID <<= 8; CID |= charID[0];
-      
-      Serial.println("Character Number: ");
-      Serial.println(CID);
-      
-      // Amiibo hasn't been removed
-      if (currentcard == lastcard) {
 
-
-        // Haven't started the Intro *yet*; start it
-        if (!introStarted) {
-
-          // Convert the CID to the intro filename  
-          char* introFileName = intro_ify(CID);
-
-          // Play the song corresponding to this CID, if it exists
-          playfile(introFileName);
-
-          // Mark that the first song for this CID is now playing
-          if (wave.isplaying) {
-             introStarted = true;
-          }
-        
-        } else if (!wave.isplaying) {
-
-          // Intro Complete; Start the main song
-          playcomplete(buffer);
-
-        }
-
-      } else {
-        
-        // Clear/reset all data
-        wave.stop();
-        lastcard = 999999999;
-        currentcard = 999999998;
-        introStarted = false;
+      // Only need to print this out if it's different
+      if (currentcard != lastcard) {
+        Serial.print("*****************\nCharacter Number: ");
+        Serial.println(CID);
       }
+
+      // Haven't started the Intro *yet*; start it
+      if (!introStarted) {
+
+        char intro[30];  
+        sprintf(intro, "%d", CID);
+        strcat(intro, ".wav");
+        Serial.println(intro);
+
+        // Play the song corresponding to this CID, if it exists
+        playfile(intro);
+
+        // Mark that the first song for this CID is now playing
+        if (wave.isplaying) {
+           introStarted = true;
+        }
+      
+      // Intro Complete; Start the main song
+      } else if (!wave.isplaying) {
+
+        char song[30];  
+        sprintf(song, "%d", CID);
+        strcat(song, "_song.wav");
+        Serial.println(song);
+        
+        playfile(song);
+
+      }
+        
     } else {
       // Amiibo removed; Clear/reset all data
       wave.stop();
@@ -180,43 +170,17 @@ void loop() {
       currentcard = 999999998;
       introStarted = false;
     }
+  } else {
+    // No Amiibo; Clear/reset all data, wait for RFID card to show up!
+    Serial.println(F("Waiting for an Amiibo ..."));wave.stop();
+    lastcard = 999999999;
+    currentcard = 999999998;
+    introStarted = false;
   }
 }
 
 /////////////////////////////////// HELPERS
 
-/*
-* print error message and halt
-*/
-void error_P(const char *str) {
-  PgmPrint("Error: ");
-  SerialPrint_P(str);
-  sdErrorCheck();
-  while(1);
-}
-
-/*
-* print error message and halt if SD I/O error
-*/
-void sdErrorCheck(void) {
-  if (!card.errorCode()) return;
-  PgmPrint("\r\nSD I/O error: ");
-  Serial.print(card.errorCode(), HEX);
-  PgmPrint(", ");
-  Serial.println(card.errorData(), HEX);
-  while(1);
-}
-
-/*
-* Play a file and wait for it to complete
-*/
-void playcomplete(char *name) {
-  playfile(name);
-  while (wave.isplaying);
-  
-  // see if an error occurred while playing
-  sdErrorCheck();
-}
 /*
 * Open and start playing a WAV file
 */
@@ -236,32 +200,4 @@ void playfile(char *name) {
   }
   // ok time to play!
   wave.play();
-}
-
-/*
- * Turn the ID into the appropriate filename that should be loaded
- *  for an Intro.
- */
-char* intro_ify(int id) {
-  char suffix[] = ".wav";
-  return id_append(id, suffix);
-}
-
-/*
- * Turn the ID into the appropriate filename that should be loaded
- *  for a continuing song.
- */
-char* song_ify(int id) {
-  char suffix[] = "_song.wav";
-  return id_append(id, suffix);
-}
-
-/*
- * Append an int and some arbitrary suffix into a char*
- */
-char* id_append(int id, char* suffix) {
-  char* intro[30];
-  sprintf(intro, "%d", id);
-  strcat(intro, suffix);
-  return intro;
 }
