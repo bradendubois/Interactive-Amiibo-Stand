@@ -9,11 +9,11 @@
 
 Adafruit_NFCShield_I2C nfc(IRQ, RESET);
 
-SdReader card;  // This object holds the information for the card
-FatVolume vol;  // This holds the information for the partition on the card
+SdReader card; // This object holds the information for the card
+FatVolume vol; // This holds the information for the partition on the card
 FatReader root; // This holds the information for the volumes root directory
 FatReader file; // This object represent the WAV file for a pi digit or period
-WaveHC wave;    // This is the only wave (audio) object, since we will only play one at a time
+WaveHC wave; // This is the only wave (audio) object, since we will only play one at a time
 
 uint32_t versiondata;
 
@@ -21,6 +21,7 @@ uint32_t lastcard = 0;
 uint32_t currentcard = 1;
 uint32_t CID = 0;
 boolean introStarted = false;
+char audioFile[30];
 
 uint32_t cardidentifier;
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 }; // Buffer to store the returned UID
@@ -72,6 +73,11 @@ void setup() {
 
 void loop() {
   
+  //Memory Checker
+  
+  //Serial.print(F("Memory Available = "));
+  //Serial.println(freeMemory());
+  
   // Wait for an ISO14443A type cards (Mifare, etc.). When one is found
   // 'uid' will be populated with the UID, and uidLength will indicate
   // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
@@ -99,6 +105,7 @@ void loop() {
      
     // Try to read the Character info page (#21)
     uint8_t charID[32];
+    
 
     // Successfully read the Character info page
     if (nfc.mifareultralight_ReadPage (21, charID)) {
@@ -122,13 +129,12 @@ void loop() {
       // Haven't started the Intro *yet*; start it
       if (!introStarted) {
 
-        char intro[30];  
-        sprintf(intro, "%d", CID);
-        strcat(intro, ".wav");
-        Serial.println(intro);
+        sprintf(audioFile, "%d", CID);
+        strcat(audioFile, ".wav");
+        Serial.println(audioFile);
 
         // Play the song corresponding to this CID, if it exists
-        playfile(intro);
+        playfile(audioFile);
 
         // Mark that the first song for this CID is now playing
         if (wave.isplaying) {
@@ -137,27 +143,16 @@ void loop() {
       
       // Intro Complete; Start the main song
       } else if (!wave.isplaying) {
-
-        char song[30];  
-        sprintf(song, "%d", CID);
-        strcat(song, "_song.wav");
-        Serial.println(song);
-        
-        playfile(song);
-
+        sprintf(audioFile, "%d", CID);
+        strcat(audioFile, "_song.wav");
+        Serial.println(audioFile);
+        playfile(audioFile);
       }
-        
-    } else {
-      // Amiibo removed; Clear/reset all data
-      wave.stop();
-      lastcard = 999999999;
-      currentcard = 999999998;
-      introStarted = false;
     }
-    
   } else {
     // No Amiibo; Clear/reset all data, wait for RFID card to show up!
-    Serial.println(F("Waiting for an Amiibo ..."));wave.stop();
+    Serial.println(F("Waiting for an Amiibo ..."));
+    wave.stop();
     lastcard = 999999999;
     currentcard = 999999998;
     introStarted = false;
@@ -171,12 +166,14 @@ void playfile(char *name) {
   if (wave.isplaying) {// already playing something, so stop it!
     wave.stop(); // stop it
   }
+  
   if (!file.open(root, name)) {
     PgmPrint("Couldn't open file ");
     Serial.print(name);
     PgmPrint("\n");
     return;
   }
+  
   if (!wave.create(file)) {
     PgmPrintln("Not a valid WAV");
     return;
