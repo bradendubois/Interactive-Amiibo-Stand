@@ -21,7 +21,6 @@ uint32_t lastcard = 0;
 uint32_t currentcard = 1;
 uint32_t CID = 0;
 boolean introStarted = false;
-char audioFile[30];
 
 uint32_t cardidentifier;
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 }; // Buffer to store the returned UID
@@ -120,17 +119,17 @@ void loop() {
       CID <<= 8; CID |= charID[1];
       CID <<= 8; CID |= charID[0];
 
-      // Only need to print this out if it's different
-      if (currentcard != lastcard) {
-        Serial.print("*****************\nCharacter Number: ");
-        Serial.println(CID);
-      }
+      Serial.print("*****************\nCharacter Number: ");
+      Serial.println(CID);
+    
 
       // Haven't started the Intro *yet*; start it
       if (!introStarted) {
 
-        sprintf(audioFile, "%d", CID);
-        strcat(audioFile, ".wav");
+        String audio = String(CID);
+        audio.concat(".wav");
+        char *audioFile = const_cast<char*>(audio.c_str());
+        playfile(audioFile);
         Serial.println(audioFile);
 
         // Play the song corresponding to this CID, if it exists
@@ -143,10 +142,12 @@ void loop() {
       
       // Intro Complete; Start the main song
       } else if (!wave.isplaying) {
-        sprintf(audioFile, "%d", CID);
-        strcat(audioFile, "_song.wav");
-        Serial.println(audioFile);
+        String audio = String(CID);
+        audio.concat("_song.wav");
+        char *audioFile = const_cast<char*>(audio.c_str());
         playfile(audioFile);
+        Serial.println(audioFile);
+        
       }
     }
   } else {
